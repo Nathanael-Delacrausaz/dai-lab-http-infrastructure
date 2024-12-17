@@ -1,281 +1,237 @@
-DAI Lab - HTTP infrastructure
-=============================
+# DAI Lab - HTTP Infrastructure
 
-Objectives
-----------
+## Step 1: Static Web Server
 
-The main objective of this lab is to learn to build a complete Web infrastructure. This means, we will build a server infrastructure that serves a static Web site and a dynamic HTTP API. The diagram below shows the architecture of the infrastructure that we will build.
-
-```mermaid
-graph LR
-    subgraph Client
-        B((Browser))
-    end
-    subgraph Server
-        RP(Reverse\nProxy)
-        SS(Static\nWeb server)
-        DS(Dynamic\nAPI server)
-    end
-    B -.-> RP
-    RP --> SS
-    RP --> DS
+### Project Structure
+```
+.
+├── docker-compose.yml  # Docker Compose configuration
+└── static-web/
+    ├── Dockerfile     # Docker configuration for Nginx
+    ├── nginx.conf     # Nginx server configuration
+    └── html/
+        └── index.html # Static website content
 ```
 
-In addition to the basic requirement of service static and dynamic content, the infrastructure will have the following features:
+### Configuration Details
 
-- **Scalability**: both the static and the dynamic server will be deployed as a cluster of several instances. The reverse proxy will be configured to distribute the load among the instances.
-- **Security**: the connection between the browser and the reverse proxy will be encrypted using HTTPS.
-- **Management**: a Web application will be deployed to manage the infrastructure. This application will allow to start/stop instances of the servers and to monitor the state of the infrastructure.
+#### Nginx Configuration (nginx.conf)
+The `nginx.conf` file contains the following key configurations:
+- `worker_connections 1024`: Defines how many simultaneous connections each worker process can handle
+- `listen 80`: The server listens on port 80 for HTTP connections
+- `root /usr/share/nginx/html`: Specifies the directory where static files are stored
+- `index index.html`: Defines the default file to serve when accessing a directory
 
-General instructions
---------------------
+#### Docker Compose Configuration
+The `docker-compose.yml` file defines the services and network configuration:
+- Creates a service named `static-web` using the Dockerfile in the static-web directory
+- Maps port 80 of the container to port 80 of the host
+- Sets up a bridge network named `gd-network` for service communication
 
-- This is a **BIG** lab and you will need a lot of time to complete it. 
-- You will work in **groups of 2 students** and use a Git workflow to collaborate.
-- For certain steps you will need to do research in the documentation by yourself (we are here to help, but we will not give you step-by-step instructions!) or you will need to be creative (do not expect complete guidelines).
-- Read carefully all the **acceptance criteria** of each step. They will tell you what you need to do to complete the step.
-- After the lab, each group will perform a short **demo** of their infrastructure.
-- **You have to write a report with a short descriptioin for each of the steps.** Please do that directly in the repo, in one or more markdown files. Start in the README.md file at the root of your directory.
-- The report must contain the procedure that you have followed to prove that your configuration is correct (what you did do make the step work and what you would do if you were doing a demo).
+### Building and Running
 
-
-Step 0: GitHub repository
--------------------------
-
-Create a GitHub repository for your project. You will use this repository to collaborate with your team mate. You will also use it to submit your work. 
-
-> [!IMPORTANT]
-> Be careful to keep a clear structure of the repository such that the different components are clearly separated.
-
-### Acceptance criteria
-
-- [ ] You have created a GitHub repository for your project.
-- [ ] The respository contains a Readme file that you will use to document your project.
-
-
-Step 1: Static Web site
------------------------
-
-The goal of this step is to build a Docker image that contains a static HTTP server Nginx. The server will serve a static Web site. The static Web site will be a single page with a nice looking template. You can use a free template for example from [Free-CSS](https://www.free-css.com/free-css-templates) or [Start Bootstrap](https://startbootstrap.com/themes).
-
-### Acceptance criteria
-
-- [ ] You have created a separate folder in your respository for your static Web server.
-- [ ] You have a Dockerfile based on the Nginx image. The Dockerfile copies the static site content into the image.
-- [ ] You have configured the `nginx.conf` configuration file to serve the static content on a port (normally 80).
-- [ ] You are able to explain the content of the `nginx.conf` file.
-- [ ] You can run the image and access the static content from a browser.
-- [ ] You have **documented** your configuration in your report.
-
-
-Step 2: Docker compose
-----------------------
-
-The goal of this step is to use Docker compose to deploy a first version of the infrastructure with a single service: the static Web server.
-
-In addition to the basic docker compose configuration, we want to be able to rebuild the docker image of the Web server. See the [Docker compose Build documentation](https://docs.docker.com/compose/compose-file/build/) for this part.
-
-### Acceptance criteria
-
-- [ ] You have added a docker compose configuration file to your GitHub repo.
-- [ ] You can start and stop an infrastructure with a single static Web server using docker compose.
-- [ ] You can access the Web server on your local machine on the respective port.
-- [ ] You can rebuild the docker image with `docker compose build`
-- [ ] You have **documented** your configuration in your report.
-
-
-Step 3: HTTP API server
------------------------
-
-This step requires a more work. The goal is to build a HTTP API with Javalin. You can implement any API of your choice, such as:
-
-- an API to manage a list of quotes of the day
-- an API to manage a list of TODO items
-- an API to manage a list of people
-
-Use your imagination and be creative!
-
-The only requirement is that the API supports at all CRUD operations, i.e.: Create, Read, Update, Delete. 
-
-Use a API testing tool such as Insomnia, Hoppscotch or Bruno to test all these operations.
-
-The server does not need to use a database. You can store the data in memory. But if you want to add a DB, feel free to do so.
-
-Once you're finished with the implementation, create a Dockerfile for the API server. Then add it as a service to your docker compose configuration.
-
-### Acceptance criteria
-
-- [ ] Your API supports all CRUD operations.
-- [ ] You are able to explain your implementation and walk us through the code.
-- [ ] You can start and stop the API server using docker compose.
-- [ ] You can access both the API and the static server from your browser.
-- [ ] You can rebuild the docker image with docker compose.
-- [ ] You can do demo where use an API testing tool to show that all CRUD operations work.
-- [ ] You have **documented** your implementation in your report.
-
-
-Step 4: Reverse proxy with Traefik
-----------------------------------
-
-The goal of this step is to place a reverse proxy in front of the dynamic and static Web servers such that the reverse proxy receives all connections and relays them to the respective Web server. 
-
-You will use [Traefik](https://traefik.io/traefik/) as a reverse proxy. Traefik interfaces directly with Docker to obtain the list of active backend servers. This means that it can dynamically adjust to the number of running server. Traefik has the particularity that it can be configured using labels in the docker compose file. This means that you do not need to write a configuration file for Traefik, but Traefik will read container configurations from the docker engine through the file `/var/run/docker.sock`.
-
-The steps to follow for this section are thus:
-
-- Add a new service "reverse_proxy" to your docker compose file using the Traefik docker image
-- Read the [Traefik Quick Start](https://doc.traefik.io/traefik/getting-started/quick-start/) documentation to establish the basic configuration.
-- Read the [Traefik & Docker](https://doc.traefik.io/traefik/routing/providers/docker/) documentation to learn how to configure Traefik to work with Docker.
-- Then implement the reverse proxy:
-  - relay the requests coming to "localhost" to the static HTTP server
-  - relay the requests coming to "localhost/api" to the API server. See the [Traefik router documentation](https://doc.traefik.io/traefik/routing/routers/) for managing routes based on path prefixes. 
-  - you will have to remove the `ports` configuration from the static and dynamic server in the docker compose file and replace them with `expose` configuration. Traefik will then be able to access the servers through the internal Docker network.
-- You can use the [Traefik dashboard](https://doc.traefik.io/traefik/operations/dashboard/) to monitor the state of the reverse proxy.
-
-### Acceptance criteria
-
-- [ ] You can do a demo where you start from an "empty" Docker environment (no container running) and using docker compose you can start your infrastructure with 3 containers: static server, dynamic server and reverse proxy
-- [ ] In the demo you can access each server from the browser in the demo. You can prove that the routing is done correctly through the reverse proxy.
-- [ ] You are able to explain how you have implemented the solution and walk us through the configuration and the code.
-- [ ] You are able to explain why a reverse proxy is useful to improve the security of the infrastructure.
-- [ ] You are able to explain how to access the dashboard of Traefik and how it works.
-- [ ] You have **documented** your configuration in your report.
-
-
-Step 5: Scalability and load balancing
---------------------------------------
-
-The goal of this section is to allow Traefik to dynamically detect several instances of the (dynamic/static) Web servers. You may have already done this in the previous step 3.
-
-Modify your docker compose file such that several instances of each server are started. Check that the reverse proxy distributes the connections between the different instances. Then, find a way to *dynamically* update the number of instances of each service with docker compose, without having to stop and restart the topology.
-
-### Acceptance criteria
-
-- [ ] You can use docker compose to start the infrastructure with several instances of each server (static and dynamic).
-- [ ] You can dynamically add and remove instances of each server.
-- [ ] You can do a demo to show that Traefik performs load balancing among the instances.
-- [ ] If you add or remove instances, you can show that the load balancer is dynamically updated to use the available instances.
-- [ ] You have **documented** your configuration in your report.
-
-
-Step 6: Load balancing with round-robin and sticky sessions
------------------------------------------------------------
-
-By default, Traefik uses round-robin to distribute the load among all available instances. However, if a service is stateful, it would be better to send requests of the same session always to the same instance. This is called sticky sessions.
-
-The goal of this step is to change the configuration such that:
-
-- Traefik uses sticky session for the dynamic server instances (API service).
-- Traefik continues to use round robin for the static servers (no change required).
-
-### Acceptance criteria
-
-- [ ] You do a setup to demonstrate the notion of sticky session.
-- [ ] You prove that your load balancer can distribute HTTP requests in a round-robin fashion to the static server nodes (because there is no state).
-- [ ] You prove that your load balancer can handle sticky sessions when forwarding HTTP requests to the dynamic server nodes.
-- [ ] You have **documented** your configuration and your validation procedure in your report.
-
-
-Step 7: Securing Traefik with HTTPS
------------------------------------
-
-Any real-world web infrastructure must be secured with HTTPS instead of clear-text HTTP. The goal of this step is to configure Traefik to use HTTPS with the clients. The schema below shows the architecture.
-
-```mermaid
-
-graph LR
-    subgraph Client
-        B((Browser))
-    end
-    subgraph Server
-        RP(Reverse\nProxy)
-        SS(Static\nWeb server)
-        DS(Dynamic\nAPI server)
-    end
-    B -. HTTPS .-> RP
-    RP -- HTTP --> SS
-    RP -- HTTP --> DS
+1. Build the services:
+```bash
+docker-compose build
 ```
 
-This means that HTTPS is used for connection with clients, over the Internet. Inside the infrastructure, the connections between the reverse proxy and the servers are still done in clear-text HTTP.
+2. Start the services:
+```bash
+docker-compose up -d
+```
 
-### Certificate
+3. Stop the services:
+```bash
+docker-compose down
+```
 
-To do this, you will first need to generate an encryption certificate. Since the system is not exposed to the Internet, you cannot use a public certificate such as Let's encrypt, but have to generate a self-signed certificate. You can [do this using openssl](https://stackoverflow.com/questions/10175812/how-to-create-a-self-signed-certificate-with-openssl#10176685).
+### Accessing the Website
+Once the services are running, you can access the static website by:
+1. Opening a web browser
+2. Navigating to http://localhost
 
-Once you got the two files (certificate and key), you can place them into a folder, which has to be [mounted as a volume in the Traefik container](https://docs.docker.com/compose/compose-file/compose-file-v3/#short-syntax-3). You can mount the volume at any path in the container, for example `/etc/traefik/certificates`.
+The website displays information about the most challenging Geometry Dash levels in a card-based layout.
 
-### Traefik configuration file
+## Step 3: Dynamic API Server
 
-Up to now, you've configured Traefik through labels directely in the docker compose file. However, it is not possible to specify the location of the certificates to Traefik with labels. You have to create a configuration file `traefik.yaml`. 
+### Project Structure
+```
+api/
+├── src/
+│   └── main/
+│       └── java/
+│           └── com/
+│               └── gd/
+│                   └── api/
+│                       ├── Level.java           # Model class for Geometry Dash levels
+│                       ├── LevelController.java  # HTTP endpoints controller
+│                       ├── LevelDAO.java        # Data Access Object for levels
+│                       └── Main.java            # Application entry point
+├── pom.xml            # Maven configuration
+└── Dockerfile         # Docker configuration for API
+```
 
-Again, you have to mount this file into the Traefik container as a volume, at the location `/etc/traefik/traefik.yaml`.
+### API Architecture
 
-The configuration file has to contain several sections:
+The API follows the MVC (Model-View-Controller) and DAO (Data Access Object) patterns:
 
-- The [providers](https://doc.traefik.io/traefik/providers/docker/#configuration-examples) section to configure Traefik to read the configuration from Docker.
-- The [entrypoints](https://doc.traefik.io/traefik/routing/entrypoints/#configuration-examples) section to configure two endpoints:  `http` and `https`.
-- The [tls](https://doc.traefik.io/traefik/https/tls/#user-defined) section to configure the TLS certificates. Specify the location of the certificates as the location where you mounted the directory into the container (such as `/etc/traefik/certificates`).
-- In order to make the dashboard accessible, you have to configure the [api](https://doc.traefik.io/traefik/operations/dashboard/#insecure-mode) section. You can remove the respective labels from the docker compose file.
+1. **Model (Level.java)**
+   - Represents a Geometry Dash level with properties:
+     - id: Unique identifier
+     - name: Level name
+     - creator: Level creator
+     - verifier: Person who verified the level
+     - difficulty: Level difficulty (e.g., "Extreme Demon")
+     - rating: Level rating (0-10)
+     - length: Level length (e.g., "Long")
+     - attempts: Number of attempts
+     - completionPercentage: Completion percentage
 
-### Activating the HTTPS entrypoint for the servers
+2. **Controller (LevelController.java)**
+   - Handles HTTP requests and responses
+   - Implements CRUD operations endpoints:
+     - GET /api/levels: List all levels
+     - GET /api/levels/{id}: Get specific level
+     - POST /api/levels: Create new level
+     - PUT /api/levels/{id}: Update existing level
+     - DELETE /api/levels/{id}: Delete level
 
-Finally, you have to activate HTTPS for the static and dynamic servers. This is done in the docker compose file. You have to add two labels to each server:
+3. **DAO (LevelDAO.java)**
+   - Manages data persistence (currently in-memory)
+   - Handles CRUD operations on Level objects
+   - Includes sample data for testing
 
-- to activate the HTTPS entrypoint,
-- to set TLS to true.
+### API Endpoints
 
-See the [Traefik documentation for Docker](https://doc.traefik.io/traefik/routing/providers/docker/#routers) for these two labels.
+#### GET /api/levels
+- Returns all levels
+- Response: 200 OK with array of levels
 
-### Testing
+#### GET /api/levels/{id}
+- Returns a specific level
+- Response: 200 OK with level or 404 Not Found
 
-After these configurations it should be possible to access the static and the dynamic servers through HTTPS. The browser will complain that the sites are not secure, since the certificate is self-signed. But you can ignore this warning.
+#### POST /api/levels
+- Creates a new level
+- Body: Level JSON object
+- Response: 201 Created with created level
 
-If it does not work, go to the Traefik dashboard and check the configuration of the routers and the entrypoints.
+Example request body:
+```json
+{
+    "name": "Sonic Wave Infinity",
+    "creator": "APTeam",
+    "verifier": "Trick",
+    "difficulty": "Extreme Demon",
+    "rating": 9.9,
+    "length": "Long",
+    "attempts": 28945,
+    "completionPercentage": 100
+}
+```
 
-### Acceptance criteria
+#### PUT /api/levels/{id}
+- Updates an existing level
+- Body: Level JSON object
+- Response: 200 OK with updated level or 404 Not Found
 
-- [ ] You can do a demo where you show that the static and dynamic servers are accessible through HTTPS.
-- [ ] You have **documented** your configuration in your report.
+#### DELETE /api/levels/{id}
+- Deletes a level
+- Response: 204 No Content or 404 Not Found
 
+### Testing the API
 
+You can test the API using tools like Hoppscotch (https://hoppscotch.io)
+(we use this tool to test the API)
 
-Optional steps
-==============
+1. Start the services:
+```bash
+docker-compose up -d
+```
 
-If you sucessfully complete all the steps above, you can reach a grade of 5.0. If you want to reach a higher grade, you can do one or more of the following optional steps. 
+2. The API will be available at:
+```
+http://localhost:8080/api/levels
+```
 
-Optional step 1: Management UI
-------------------------------
+3. Test different endpoints:
+   - Use GET to retrieve levels
+   - Use POST to create new levels
+   - Use PUT to update existing levels
+   - Use DELETE to remove levels
 
-The goal of this step is to deploy or develop a Web app that can be used to monitor and update your Web infrastructure dynamically. You should be able to list running containers, start/stop them and add/remove instances.
+### Implementation Details
 
-- you use an existing solution (search on Google)
-- for extra points, develop your own Web app. In this case, you can use the Dockerode npm module (or another Docker client library, in any of the supported languages) to access the docker API.
+- Built with Java and Javalin framework
+- Uses Jackson for JSON serialization
+- CORS enabled for cross-origin requests
+- Runs on port 8080
+- Containerized with Docker
+- Integrated with the static web server via Docker Compose
 
-### Acceptance criteria
+## Step 4: Reverse Proxy with Traefik
 
-- [ ] You can do a demo to show the Management UI and manage the containers of your infrastructure.
-- [ ] You have **documented** how to use your solution.
-- [ ] You have **documented** your configuration in your report.
+### Overview
+Traefik is used as a reverse proxy to route requests to the appropriate service based on the URL path. This setup allows us to access both our static website and API through a single domain.
 
+### Configuration
+The setup involves three main services:
+1. `reverse-proxy` (Traefik)
+2. `static-web` (Nginx static website)
+3. `api` (Java API)
 
-Optional step 2: Integration API - static Web site
---------------------------------------------------
+### Network Configuration
+Two Docker networks are used:
+- `traefik-public`: For communication between Traefik and services
+- `gd-network`: For internal communication between services
 
-This is a step into unknow territory. But you will figure it out.
+### Traefik Configuration
+```yaml
+reverse-proxy:
+  image: traefik:latest
+  command:
+    - "--api.insecure=true"
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.web.address=:80"
+  ports:
+    - "80:80"
+    - "8080:8080"
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+```
 
-The goal of this step is to change your static Web page to periodically make calls to your API server and show the results in the Web page. You will need JavaScript for this and this functionality is called AJAX.
+### Service Labels
+Each service is configured with Traefik labels for routing:
 
-Keep it simple! You can start by just making a GET request to the API server and display the result on the page. If you want, you can then you can add more features, but this is not obligatory.
+**Static Web Server:**
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.static.rule=Host(`localhost`) && PathPrefix(`/`)"
+  - "traefik.http.services.static.loadbalancer.server.port=80"
+```
 
+**API Server:**
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+  - "traefik.http.services.api.loadbalancer.server.port=8080"
+```
 
-The modern way to make such requests is to use the [JavaScript Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch). But you can also use JQuery if you prefer.
+### Accessing Services
+- Static Website: http://localhost/
+- API Endpoints: http://localhost/api/levels
+- Traefik Dashboard: http://localhost:8080
 
+### Starting the Services
+```bash
+# Create the Traefik network (if not exists)
+docker network create traefik-public
 
-### Acceptance criteria
+# Start all services
+docker compose up -d
 
-- [ ] You have added JavaScript code to your static Web page to make at least a GET request to the API server.
-- [ ] You can do a demo where you show that the API is called and the result is displayed on the page.
-- [ ] You have **documented** your implementation in your report.
+```
 
