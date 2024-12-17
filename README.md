@@ -235,3 +235,48 @@ docker compose up -d
 
 ```
 
+## Step 5: Scalability and Load Balancing
+
+### Overview
+This step implements horizontal scaling for both the static web server and API server, allowing multiple instances to run simultaneously with automatic load balancing through Traefik.
+
+### Configuration
+The setup uses Docker Compose's `deploy` section to specify the number of replicas for each service:
+
+```yaml
+static-web:
+  deploy:
+    mode: replicated
+    replicas: 3  # 3 instances of static web server
+
+api:
+  deploy:
+    mode: replicated
+    replicas: 2  # 2 instances of API server
+```
+
+### Load Balancing
+- Traefik automatically detects all instances of each service
+- Uses round-robin load balancing by default
+- Dynamically updates when instances are added or removed
+
+### Scaling Commands
+To scale services up or down:
+```bash
+# Scale static web server
+docker compose up -d --scale static-web=5
+
+# Scale API server
+docker compose up -d --scale api=3
+```
+
+### Verifying Load Balancing
+1. Check running instances:
+```bash
+docker compose ps
+```
+
+2. View Traefik dashboard at http://localhost:8080 to see:
+   - All running instances
+   - Load balancing configuration
+   - Health status of each instance
