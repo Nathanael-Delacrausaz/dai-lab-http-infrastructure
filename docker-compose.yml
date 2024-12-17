@@ -37,6 +37,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
       - "traefik.http.services.api.loadbalancer.server.port=8080"
+      # Configuration des sticky sessions pour l'API
+      - "traefik.http.services.api.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.api.loadbalancer.sticky.cookie.name=API_STICKY"
     networks:
       - traefik-public
 

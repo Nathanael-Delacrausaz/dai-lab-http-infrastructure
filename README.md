@@ -280,3 +280,57 @@ docker compose ps
    - All running instances
    - Load balancing configuration
    - Health status of each instance
+
+## Step 6: Load Balancing with Round-Robin and Sticky Sessions
+
+### Overview
+This step implements different load balancing strategies :
+- Round-robin for the static web server (default behavior)
+- Sticky sessions for the API server (to maintain session consistency)
+
+### Configuration
+Added sticky session configuration to the API service in `docker-compose.yml`:
+
+```yaml
+api:
+  labels:
+    - "traefik.http.services.api.loadbalancer.sticky.cookie=true"
+    - "traefik.http.services.api.loadbalancer.sticky.cookie.name=API_STICKY"
+```
+
+### How it Works
+1. **Static Web Server (Round-Robin)**:
+   - Requests are distributed evenly across all instances
+   - Each request can go to a different instance
+   - Good for stateless content
+
+2. **API Server (Sticky Sessions)**:
+   - First request generates a cookie named "API_STICKY"
+   - Subsequent requests with this cookie go to the same instance
+   - Ensures session consistency for stateful operations
+
+### Testing the Configuration
+
+To verify the load balancing strategies:
+
+1. **Round-Robin (Static Server)**:
+```bash
+# Watch the logs while making multiple requests to http://localhost/
+docker compose logs static-web
+```
+Should see requests distributed across different instances.
+
+2. **Sticky Sessions (API)**:
+- Open browser developer tools (F12)
+- Go to Network tab
+- Make requests to http://localhost/api/levels
+- Observe:
+  - The "API_STICKY" cookie in response headers
+  - All subsequent requests going to the same instance
+- Clear cookies to get assigned to a potentially different instance
+
+### Validation
+You can verify the configuration is working by:
+1. Checking Traefik's dashboard at http://localhost:8080
+2. Monitoring container logs
+3. Inspecting cookies and response headers in browser developer tools
