@@ -334,3 +334,144 @@ You can verify the configuration is working by:
 1. Checking Traefik's dashboard at http://localhost:8080
 2. Monitoring container logs
 3. Inspecting cookies and response headers in browser developer tools
+
+## Step 7: Securing Traefik with HTTPS
+
+### Overview
+This step implements HTTPS security for our infrastructure using Traefik as the SSL termination point. All external traffic is encrypted using HTTPS, while internal communication between Traefik and the services remains in HTTP.
+
+### Implementation Steps
+
+1. **Certificate Generation**
+   - Created self-signed certificates using OpenSSL
+   - Certificates are stored in the `certs` directory
+   - Used for development/testing purposes (in production, use proper CA-signed certificates)
+
+2. **Traefik Configuration**
+   Created `traefik.yaml` with the following key configurations:
+   ```yaml
+   entryPoints:
+     web:
+       address: ":80"
+       http:
+         redirections:
+           entryPoint:
+             to: websecure
+             scheme: https
+     websecure:
+       address: ":443"
+
+   tls:
+     certificates:
+       - certFile: "/etc/traefik/certificates/cert.crt"
+         keyFile: "/etc/traefik/certificates/cert.key"
+   ```
+
+3. **Service Configuration**
+   Updated services in `docker-compose.yml` with HTTPS labels:
+   ```yaml
+   labels:
+     - "traefik.http.routers.static.entrypoints=websecure"
+     - "traefik.http.routers.static.tls=true"
+   ```
+
+### Security Benefits
+- All external traffic is encrypted
+- Automatic HTTP to HTTPS redirection
+- SSL termination at Traefik (internal traffic remains unencrypted for better performance)
+- Certificate management centralized at the reverse proxy level
+
+### Testing
+1. Access the services via HTTPS:
+   - Static site: https://localhost/
+   - API: https://localhost/api/levels
+   - Traefik dashboard: http://localhost:8080
+
+2. Verify that HTTP requests are automatically redirected to HTTPS
+
+Note: Your browser will show a security warning because we're using a self-signed certificate. This is normal in development environments.
+
+## Optional Step: Integration API - Static Web Site
+
+### Overview
+This step implements a dynamic integration between our static website and the API server using JavaScript's Fetch API. The integration provides real-time interaction with the Geometry Dash levels database through a modern, responsive interface.
+
+### Features Implemented
+
+1. **Real-time Data Display**
+   - Automatic fetching of levels from the API every 5 seconds
+   - Dynamic statistics dashboard showing total levels and difficulty distribution
+   - Visual feedback for all API operations
+
+2. **Interactive Level Management**
+   ```javascript
+   // Example of level creation
+   async function addLevel(event) {
+       const levelData = {
+           name: document.getElementById('levelName').value,
+           creator: document.getElementById('levelCreator').value,
+           difficulty: document.getElementById('levelDifficulty').value
+       };
+       // API call...
+   }
+   ```
+
+3. **CRUD Operations**
+   - **Create**: Form to add new levels with name, creator, and difficulty
+   - **Read**: Automatic fetching and display of all levels
+   - **Delete**: Button on each level card for removal
+   - Visual feedback for all operations through status messages
+
+4. **User Interface Components**
+   - Level creation form with validation
+   - Dynamic statistics cards
+   - Level cards with difficulty indicators
+   - Status notifications for operation feedback
+
+### Technical Implementation
+
+1. **API Integration**
+   ```javascript
+   async function fetchLevels() {
+       const response = await fetch('/api/levels');
+       const levels = await response.json();
+       updateStats(levels);
+       updateDisplay(levels);
+   }
+   ```
+
+2. **Error Handling**
+   - Network error management
+   - User feedback through status messages
+   - Graceful degradation when API is unavailable
+
+3. **Automatic Updates**
+   ```javascript
+   // Periodic refresh every 5 seconds
+   setInterval(fetchLevels, 5000);
+   ```
+
+### Testing the Integration
+
+1. **Adding a Level**
+   - Fill out the form at the top of the page
+   - Submit to see real-time addition to the list
+   - Statistics automatically update
+
+2. **Viewing Levels**
+   - All levels are displayed in cards
+   - Each card shows name, creator, and difficulty
+   - Visual indicators match difficulty levels
+
+3. **Deleting Levels**
+   - Click the delete button on any level card
+   - Confirm the level disappears
+   - Statistics update automatically
+
+### Validation
+You can verify the integration is working by:
+1. Opening the browser's developer tools (F12)
+2. Watching the Network tab for API calls
+3. Observing real-time updates to the UI
+4. Testing error scenarios by temporarily stopping the API service
+
