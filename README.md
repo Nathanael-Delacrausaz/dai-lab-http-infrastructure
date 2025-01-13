@@ -50,26 +50,9 @@ Once the services are running, you can access the static website by:
 1. Opening a web browser
 2. Navigating to http://localhost
 
-The website displays information about the most challenging Geometry Dash levels in a card-based layout.
+The website displays information about the most challenging Geometry Dash levels (it's a video game).
 
 ## Step 3: Dynamic API Server
-
-### Project Structure
-```
-api/
-├── src/
-│   └── main/
-│       └── java/
-│           └── com/
-│               └── gd/
-│                   └── api/
-│                       ├── Level.java           # Model class for Geometry Dash levels
-│                       ├── LevelController.java  # HTTP endpoints controller
-│                       ├── LevelDAO.java        # Data Access Object for levels
-│                       └── Main.java            # Application entry point
-├── pom.xml            # Maven configuration
-└── Dockerfile         # Docker configuration for API
-```
 
 ### API Architecture
 
@@ -164,7 +147,6 @@ http://localhost:8080/api/levels
 
 - Built with Java and Javalin framework
 - Uses Jackson for JSON serialization
-- CORS enabled for cross-origin requests
 - Runs on port 8080
 - Containerized with Docker
 - Integrated with the static web server via Docker Compose
@@ -329,12 +311,6 @@ Should see requests distributed across different instances.
   - All subsequent requests going to the same instance
 - Clear cookies to get assigned to a potentially different instance
 
-### Validation
-You can verify the configuration is working by:
-1. Checking Traefik's dashboard at http://localhost:8080
-2. Monitoring container logs
-3. Inspecting cookies and response headers in browser developer tools
-
 ## Step 7: Securing Traefik with HTTPS
 
 ### Overview
@@ -375,12 +351,6 @@ This step implements HTTPS security for our infrastructure using Traefik as the 
      - "traefik.http.routers.static.tls=true"
    ```
 
-### Security Benefits
-- All external traffic is encrypted
-- Automatic HTTP to HTTPS redirection
-- SSL termination at Traefik (internal traffic remains unencrypted for better performance)
-- Certificate management centralized at the reverse proxy level
-
 ### Testing
 1. Access the services via HTTPS:
    - Static site: https://localhost/
@@ -394,7 +364,7 @@ Note: Your browser will show a security warning because we're using a self-signe
 ## Optional Step: Integration API - Static Web Site
 
 ### Overview
-This step implements a dynamic integration between our static website and the API server using JavaScript's Fetch API. The integration provides real-time interaction with the Geometry Dash levels database through a modern, responsive interface.
+This step implements a dynamic integration between our static website and the API server using JavaScript's Fetch API. The integration provides real-time interaction with the Geometry Dash levels database.
 
 ### Features Implemented
 
@@ -450,23 +420,6 @@ This step implements a dynamic integration between our static website and the AP
    // Periodic refresh every 5 seconds
    setInterval(fetchLevels, 5000);
    ```
-
-### Testing the Integration
-
-1. **Adding a Level**
-   - Fill out the form at the top of the page
-   - Submit to see real-time addition to the list
-   - Statistics automatically update
-
-2. **Viewing Levels**
-   - All levels are displayed in cards
-   - Each card shows name, creator, and difficulty
-   - Visual indicators match difficulty levels
-
-3. **Deleting Levels**
-   - Click the delete button on any level card
-   - Confirm the level disappears
-   - Statistics update automatically
 
 ### Validation
 You can verify the integration is working by:
